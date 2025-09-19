@@ -1,9 +1,12 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import Form from 'next/form';
+import { useSearchParams } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { SearchButton } from '@/components/ui/search-button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -36,8 +39,9 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import type { BlobItem } from '@/hooks/useListBlobs';
 
 export default function GalleryPage() {
+  const searchParams = useSearchParams();
   const [currentFolder, setCurrentFolder] = useState<string>('');
-  const [searchPrefix, setSearchPrefix] = useState<string>('');
+  const searchPrefix = searchParams.get('prefix') || '';
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [displayMode, setDisplayMode] = useState<'expanded' | 'folded'>('folded');
   const [selectedFile, setSelectedFile] = useState<BlobItem | null>(null);
@@ -58,22 +62,6 @@ export default function GalleryPage() {
 
   const handleRefresh = useCallback(async () => {
     try {
-      await refresh({
-        prefix: currentFolder || undefined,
-        mode: displayMode,
-        limit: 50,
-      });
-    } catch {
-      toast.error('Failed to load blobs');
-    }
-  }, [refresh, currentFolder, displayMode]);
-
-  useEffect(() => {
-    handleRefresh();
-  }, [handleRefresh]);
-
-  const handleSearch = async () => {
-    try {
       const effectivePrefix = searchPrefix.trim() || currentFolder || undefined;
       await refresh({
         prefix: effectivePrefix,
@@ -81,13 +69,16 @@ export default function GalleryPage() {
         limit: 50,
       });
     } catch {
-      toast.error('Failed to search blobs');
+      toast.error('Failed to load blobs');
     }
-  };
+  }, [refresh, searchPrefix, currentFolder, displayMode]);
+
+  useEffect(() => {
+    handleRefresh();
+  }, [handleRefresh]);
 
   const handleFolderNavigation = async (folderPath: string) => {
     setCurrentFolder(folderPath);
-    setSearchPrefix('');
     try {
       await refresh({
         prefix: folderPath || undefined,
@@ -354,17 +345,14 @@ export default function GalleryPage() {
 
           <div className="flex flex-wrap gap-4">
             <div className="flex-1 min-w-64">
-              <div className="flex gap-2">
+              <Form action="/gallery" className="flex gap-2">
                 <Input
+                  name="prefix"
                   placeholder="Search by prefix..."
-                  value={searchPrefix}
-                  onChange={(e) => setSearchPrefix(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                  defaultValue={searchPrefix}
                 />
-                <Button onClick={handleSearch} disabled={isLoading}>
-                  <Search className="w-4 h-4" />
-                </Button>
-              </div>
+                <SearchButton />
+              </Form>
             </div>
 
             <div className="flex gap-2">
