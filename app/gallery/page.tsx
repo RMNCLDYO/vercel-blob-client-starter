@@ -79,7 +79,6 @@ export default function GalleryPage() {
     handleRefresh();
   }, [handleRefresh]);
 
-
   const handleFolderNavigation = async (folderPath: string) => {
     setCurrentFolder(folderPath);
     try {
